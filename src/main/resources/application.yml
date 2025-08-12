@@ -16,4 +16,9 @@ spring:
     console:
       enabled: true
 
+jwt:
+  issuer: seming@gmail.com
+  secret_key: study-springboot-temp
+
+
 

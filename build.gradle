@@ -30,9 +30,16 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
     implementation 'org.springframework.security:spring-security-test'
+
+    // jwt 라이브러리
+    implementation 'io.jsonwebtoken:jjwt:0.9.1' // 자바 JWT 라이브러리
+    implementation 'javax.xml.bind:jaxb-api:2.3.1' // xml 문서와 java 객체 간 매핑 자동화
+
     runtimeOnly 'com.h2database:h2'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
     testImplementation 'org.mockito:mockito-core:5.12.0'
