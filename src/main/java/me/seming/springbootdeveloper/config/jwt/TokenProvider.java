@@ -42,7 +42,7 @@ public class TokenProvider {
                 .setSubject(user.getEmail())    // 내용 sub : 유저의 이메일
                 .claim("id", user.getId())   // 클레임 id : 유저 ID
                 // 서명 : 비밀값과 함께 해시값을 HS256 방식으로 암호화
-                .signWith(SignatureAlgorithm.HS256, jwtProperties.getSecret())
+                .signWith(SignatureAlgorithm.HS256, jwtProperties.getSecretKey())
                 .compact();
     }
 
@@ -50,7 +50,7 @@ public class TokenProvider {
     public boolean validToken(String token) {
         try {
             Jwts.parser()
-                    .setSigningKey(jwtProperties.getSecret()) // 비밀번호값으로 복호화
+                    .setSigningKey(jwtProperties.getSecretKey()) // 비밀번호값으로 복호화
                     .parseClaimsJws(token);
 
             return true;
@@ -75,7 +75,7 @@ public class TokenProvider {
 
     private Claims getClaims(String token) {
         return Jwts.parser() // 클레임 조회
-                .setSigningKey(jwtProperties.getSecret())
+                .setSigningKey(jwtProperties.getSecretKey())
                 .parseClaimsJws(token)
                 .getBody();
     }
