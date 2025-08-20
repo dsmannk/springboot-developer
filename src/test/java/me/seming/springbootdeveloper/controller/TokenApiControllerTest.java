@@ -1,6 +1,5 @@
 package me.seming.springbootdeveloper.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import me.seming.springbootdeveloper.config.jwt.JwtFactory;
 import me.seming.springbootdeveloper.config.jwt.JwtProperties;
