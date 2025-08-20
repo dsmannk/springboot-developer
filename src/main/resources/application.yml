@@ -1,4 +1,15 @@
 spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: "1084127876455-k439dm1nmi0ltulpuebav6d3sorr0049.apps.googleusercontent.com"
+            client-secret: "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"
+            scope:
+              - email
+              - profile
+
   jpa:
     # 전송 쿼리 확인
     show-sql: true
