@@ -2,6 +2,8 @@ package me.seming.springbootdeveloper.config;
 
 import lombok.RequiredArgsConstructor;
 import me.seming.springbootdeveloper.config.jwt.TokenProvider;
+import me.seming.springbootdeveloper.config.oauth.OAuth2AuthorizationRequestBasedOnCookieRepository;
+import me.seming.springbootdeveloper.config.oauth.OAuth2SuccessHandler;
 import me.seming.springbootdeveloper.config.oauth.OAuth2UserCustomService;
 import me.seming.springbootdeveloper.repository.RefreshTokenRepository;
 import me.seming.springbootdeveloper.service.UserService;
@@ -17,6 +19,7 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.AntPathMatcher;
@@ -41,6 +44,13 @@ public class WebOAuthSecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        // 경로 상수 도입으로 중복 제거 및 의도 명확화
+        final String API_PATH = "/api/**";
+        final String LOGIN_PATH = "/login";
+        final String TOKEN_ENDPOINT = "/api/token";
+        final AntPathRequestMatcher apiMatcher = new AntPathRequestMatcher(API_PATH);
+
+
         // 토큰 방식으로 인증을 하기 때문에 기존에 사용하던 폼 로그인, 세션 비활성화
         return http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -49,18 +59,25 @@ public class WebOAuthSecurityConfig {
                 .logout(AbstractHttpConfigurer::disable)
                 .sessionManagement(management ->
                         management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
                 // 헤더를 확인할 커스텀 필터 추가
-                .addFilterBefore(tokenAuthenticatonFilter(), UsernamePasswordAuthenticationFilter.class)
+                // 커스텀 토큰 인증 필터 삽입
+                .addFilterBefore(tokenAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+
                 // 토큰 재발급 URL은 인증 없이 접근 가능하도록 설정, 나머지 API URL은 인증 필요
-                .authorizeRequests(auth -> auth
-                        .requestMatchers("/api/token").permitAll()
-                        .requestMatchers("/api/**").authenticated()
+                // 인가 규칙 정의 (Spring Security 6: authorizeHttpRequests)
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(TOKEN_ENDPOINT).permitAll()
+                        .requestMatchers(API_PATH).authenticated()
                         .anyRequest().permitAll())
-                .oauth2Login(oauth2 -> oauth2.loginPage("/login")
-                // Authorization 요청과 관련된 상태 저장
-                .authorizationEndpoint(authorizationEndpoint -> authorizationEndpoint
-                        .authorizationRequestRepository(oAuth2AuthorizationRequestBasedOnCookieRepository()))
-                        .userInfoEndpoint(userInfoEndpoint -> userInfoEndpoint.userService(oAuth2UserCustomService))
+
+                // OAuth2 로그인 설정
+                .oauth2Login(oauth2 -> oauth2
+                                .loginPage(LOGIN_PATH)
+                                // Authorization 요청과 관련된 상태 저장
+                                .authorizationEndpoint(authorization -> authorization
+                                    .authorizationRequestRepository(oAuth2AuthorizationRequestBasedOnCookieRepository()))
+                                .userInfoEndpoint(userInfo -> userInfo.userService(oAuth2UserCustomService))
                         // 인증 성공 시 실행할 핸들러
                         .successHandler(oAuth2SuccessHandler())
                 )
@@ -68,13 +85,15 @@ public class WebOAuthSecurityConfig {
                 .exceptionHandling(exceptionHandling -> exceptionHandling
                         .defaultAuthenticationEntryPointFor(
                                 new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
-                                new AntPathMatcher("/api/**")
+                                apiMatcher
                         ))
                 .build();
     }
 
+    @Bean
     public OAuth2SuccessHandler oAuth2SuccessHandler() {
-        return new OAuth2SuccessHandler(tokenProvider,
+        return new OAuth2SuccessHandler(
+                tokenProvider,
                 refreshTokenRepository,
                 oAuth2AuthorizationRequestBasedOnCookieRepository(),
                 userService
@@ -82,7 +101,7 @@ public class WebOAuthSecurityConfig {
     }
 
     @Bean
-    public TokenAuthenticationFilter tokenAuthenticatonFilter() {
+    public TokenAuthenticationFilter tokenAuthenticationFilter() {
         return new TokenAuthenticationFilter(tokenProvider);
     }
 
