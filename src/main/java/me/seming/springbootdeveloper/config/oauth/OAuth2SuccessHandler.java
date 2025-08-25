@@ -3,6 +3,7 @@ package me.seming.springbootdeveloper.config.oauth;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import me.seming.springbootdeveloper.config.jwt.TokenProvider;
 import me.seming.springbootdeveloper.domain.RefreshToken;
 import me.seming.springbootdeveloper.domain.User;
@@ -18,6 +19,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.IOException;
 import java.time.Duration;
 
+@Slf4j
 @RequiredArgsConstructor
 @Component
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
@@ -36,13 +38,23 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
         User user = userService.findByEmail((String) oAuth2User.getAttributes().get("email"));
 
+        log.info("onAuthenticationSuccess::oAuth2User : {}", oAuth2User);
+        log.info("onAuthenticationSuccess::user : {}", user);
+
         // 리프레시 토큰 생성 -> 저장 -> 쿠키에 저장
         String refreshToken = tokenProvider.generateToken(user, REFRESH_TOKEN_DURATION);
+
+        log.info("onAuthenticationSuccess::refreshToken : {}", refreshToken);
+        log.info("onAuthenticationSuccess::addRefreshtokenToCookie : {} {} {}", request, response, refreshToken);
+
         saveRefreshToken(user.getId(), refreshToken);
         addRefreshtokenToCookie(request, response, refreshToken);
         // 엑세스 토큰 생성 -> 패스에 엑세스 토큰 추가
         String accessToken = tokenProvider.generateToken(user, ACCESS_TOKEN_DURATION);
         String targetUrl = getTargetUrl(accessToken);
+
+        log.info("onAuthenticationSuccess::accessToken : {}", accessToken);
+
         // 인증 관련 설정값, 쿠키 제거
         clearAuthenticationAttributes(request, response);
         // 리다이렉트
